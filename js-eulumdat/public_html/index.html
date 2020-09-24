@@ -8,9 +8,9 @@
   </head>
   <body>
     <div>
-      <label for="ldturl">URL of ldt-file:</label>
-      <input id ="ldturl" name="ldturl" type="text" value="http://localhost/js_eulumdat/js-eulumdat/js-eulumdat/public_html/sample.ldt">
-      <button>Submit</button>
+      <label for="ldtfile">ldt-file:</label>
+      <input id ="ldtfile" name="ldtfile" type="file">
+      <button onclick = "loadLDTFile('ldtfile')">Submit</button>
     </div>
     <div>
       <div id="first">
@@ -22,8 +22,23 @@
       class Eulumdat {
         
         constructor () {
+          this.symmetry = null;
+          this.cplanesNumbers = null;
+          this.cplanesDistances = null;
+          this.cplanesIntensities = null;
+          this.luminaireHeight = null;
+          this.totalLuminous = null;
+          
+          this.distanceTableHeights = [2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500];
+          this.distanceTable = [];
+          this.maintenanceFactor = 0.8; // Wartungsfaktor
+          
+          this.mod = 43;
+          
           this.rawData = "";
           this.arrData = "";
+          this.arrLuminousIntensity = [];
+          this.arrLuminousIntensityCD = [];
           this.lineNames = this.nameLines();
         }
 
@@ -73,11 +88,6 @@
         }
         
         htmlSecondLines() {
-          let symmetry = parseInt(this.arrData[3]);
-          let cplanesNumbers = parseInt(this.arrData[4]);
-          let cplanesDistances = parseInt(this.arrData[5]);
-          let cplanesIntensities = parseInt(this.arrData[6]);
-          let mod = 43 + cplanesNumbers + cplanesIntensities;
           let ret= "";
           
           ret += "<table>\n";
@@ -95,18 +105,40 @@
           ret += "    <th>c90°</th>\n";
           ret += "  </tr>\n";
           
-          for (let ci=0; ci<cplanesIntensities; ci++) {
+          for (let ci=0; ci<this.cplanesIntensities; ci++) {
             ret += "  <tr>\n";
-            ret += "    <td>"+ci+"°</td>\n"
-            for (let dc=0; dc <=90; dc+=cplanesDistances) {
-              ret += "    <td>"+this.arrData[mod+(dc/cplanesDistances*cplanesIntensities)+ci]+"</td>\n";
+            ret += "    <td>"+ci+"°</td>\n";
+            for (let dc=0; dc <=90; dc+=this.cplanesDistances) {
+              ret += "    <td>"+this.arrData[this.mod+(dc/this.cplanesDistances*this.cplanesIntensities)+ci]+"</td>\n";
             }
             ret += "  </tr>\n";
           }
           ret += "</table>\n";
           return ret;
         }
-
+        
+        htmlDistanceTable() {
+          let ret= "";
+          ret += "<table>\n";
+          ret += "  <tr>\n";
+          ret += "    <th>Montagehöhe</th>\n";
+          ret += "    <th>W-L0</th>\n";
+          ret += "    <th>L0-L0</th>\n";
+          ret += "    <th>W-L90</th>\n";
+          ret += "    <th>L90-L90</th>\n";
+          ret += "  </tr>\n";
+          for (let i=0; i < this.distanceTable.length; i++) {
+            ret += "  <tr>\n"
+            ret += "    <td>"+(this.distanceTable[i][0]/1000).toFixed(2)+" m</td>\n";
+            ret += "    <td>"+(this.distanceTable[i][1]/1000).toFixed(2)+" m</td>\n";
+            ret += "    <td>"+(this.distanceTable[i][2]/1000).toFixed(2)+" m</td>\n";
+            ret += "    <td>"+(this.distanceTable[i][3]/1000).toFixed(2)+" m</td>\n";
+            ret += "    <td>"+(this.distanceTable[i][4]/1000).toFixed(2)+" m</td>\n";
+            ret += "  </tr>\n"
+          }
+          ret += "</table>\n";
+          return ret;
+        }
     
         nameLines() {
           return [
@@ -143,33 +175,119 @@
             , "Lichtfarbe / Farbtemperatur"
             , "Farbwiedergabeklasse / Farbwiedergabeindex"
             , "Leistungsaufnahme gesamte Leuchte in W"
-            , "Direct ratios for room indices k = 0,6 … 5"
-            , "C-Winkel (beginnend bei 0°)"
-            , "G-Winkel (beginnend bei 0°)"
-            , "Lichtstärkeverteilung in Candela pro 1000 Lumen"
+            , "??Direct ratios for room indices k = 0,6 … 5"
+            , "??C-Winkel (beginnend bei 0°)"
+            , "??G-Winkel (beginnend bei 0°)"
+            , "??Lichtstärkeverteilung in Candela pro 1000 Lumen"
           ];
         }
-        eulumdat_convert(data) {
+        
+        buildArrLuminousIntensity() {
+          let ret= [];
+          
+          
+          for (let ci=0; ci<this.cplanesIntensities; ci++) {
+            let sub = [];
+            sub.push(ci);
+            for (let dc=0; dc <=90; dc+=this.cplanesDistances) {
+              sub.push(parseFloat(this.arrData[this.mod+(dc/this.cplanesDistances*this.cplanesIntensities)+ci]));
+            }
+            ret.push(sub);
+          }
+          return ret;
+        }
+        
+        buildArrLuminousIntensityCD() {
+          let ret = [];
+          let levelC0 = null;
+          let levelC90 = null;
+          for (let ci=0; ci<this.cplanesIntensities; ci++) {
+            levelC0 =  this.arrLuminousIntensity[ci][1] * this.totalLuminous / 1000;
+            levelC90 =  this.arrLuminousIntensity[ci][this.cplanesDistances] * this.totalLuminous / 1000;
+            ret.push([ci, levelC0, levelC90]);
+          }
+          return ret;
+        }
+        
+        buildArrDistanceTable() {
+          let table = [];
+          this.distanceTableHeights.forEach(value=> {
+            let currentDistance = value - this.luminairHeight;
+            let distWL0 = 0;
+            let distL0L0 = 0;
+            let distWL90 = 0;
+            let distL90L90 = 0;
+            for (let angle=0; angle<this.cplanesIntensities; angle++) {
+              let lightpath = currentDistance / (Math.cos(Math.PI/180*angle));
+              let distance = currentDistance * (Math.tan(Math.PI/180*angle));
+              let lxC0 = this.maintenanceFactor * this.arrLuminousIntensityCD[angle][1]/(lightpath/1000*lightpath/1000)
+                * Math.cos(Math.PI/180*angle);
+              let lxC90 = this.maintenanceFactor * this.arrLuminousIntensityCD[angle][2]/(lightpath/1000*lightpath/1000)
+                * Math.cos(Math.PI/180*angle);
+              if (lxC0 > 1) {
+                distWL0 = (distance > distWL0) ? distance : distWL0;
+              }
+              if (lxC0 > 0.5) {
+                distL0L0 = (2*distance > distL0L0) ? 2*distance : distL0L0;
+              }
+              if (lxC90 > 1) {
+                distWL90 = (distance > distWL90) ? distance : distWL90;
+              }
+              if (lxC90 > 0.5) {
+                distL90L90 = (2*distance > distL90L90) ? 2*distance : distL90L90;
+              }
+            }
+            table.push([value, distWL0, distL0L0, distWL90, distL90L90]);
+          });
+          return table;
+        }
+        
+        eulumdatConvert(data) {
           let edArray = data.split(/\r?\n/);  //converts eulumdat file to array
           edArray.unshift(null);
           this.arrData = edArray;
           this.nameLines();
+
+          this.symmetry = parseInt(this.arrData[3]);
+          this.cplanesNumbers = parseInt(this.arrData[4]);
+          this.cplanesDistances = parseInt(this.arrData[5]);
+          this.cplanesIntensities = parseInt(this.arrData[6]);
+          this.luminairHeight = parseInt(this.arrData[15]);
+          this.totalLuminous = parseFloat(this.arrData[29]);
+          this.mod = 43 + this.cplanesNumbers + this.cplanesIntensities;
+          
+          this.arrLuminousIntensity = this.buildArrLuminousIntensity();
+          this.arrLuminousIntensityCD = this.buildArrLuminousIntensityCD();
+          this.distanceTable = this.buildArrDistanceTable();
         }
+
       }
       
       myEuDat = new Eulumdat();
-      fetch('http://localhost/js_eulumdat/js-eulumdat/js-eulumdat/public_html/sample.ldt')
-        .then(response => response.text().then(text => {
-          //console.log(text);
-          myEuDat.eulumdat_convert(text);
-          document.getElementById('first').innerHTML = myEuDat.htmlFirstLines();
-//          myEuDat.firstLines();
-          document.getElementById('second').innerHTML = myEuDat.htmlSecondLines();
-//          myEuDat.secondLines();
-
-        }
-      ));
       
+      function loadLDTFile(ldtfile) {
+        let input = document.getElementById(ldtfile);
+        if (input.files.length === 1) {
+          let file = input.files[0];
+          let reader = new FileReader();
+          reader.addEventListener('load', function(e) {
+              let text = e.target.result;
+              myEuDat.eulumdatConvert(text);
+              document.getElementById('first').innerHTML = myEuDat.htmlFirstLines();
+              document.getElementById('second').innerHTML = myEuDat.htmlDistanceTable();
+//        
+              console.log(text);
+          });
+          reader.readAsText(file);
+        }
+      }
+//      fetch('http://localhost/js_eulumdat/js-eulumdat/js-eulumdat/public_html/sample2.ldt')
+//        .then(response => response.text().then(text => {
+//          myEuDat.eulumdatConvert(text);
+//          document.getElementById('first').innerHTML = myEuDat.htmlFirstLines();
+//          document.getElementById('second').innerHTML = myEuDat.htmlDistanceTable();
+//        }
+//      ));
         
     </script>
   </body>

@@ -1,16 +1,176 @@
 <!DOCTYPE html>
-<!--
-To change this license header, choose License Headers in Project Properties.
-To change this template file, choose Tools | Templates
-and open the template in the editor.
--->
-<html>
+<html lang="de">
   <head>
-    <title>TODO supply a title</title>
+    <title>js-eulumdat</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="./js/js-eulumdat.js"></script>
   </head>
   <body>
-    <div>TODO write content33</div>
+    <div>
+      <label for="ldturl">URL of ldt-file:</label>
+      <input id ="ldturl" name="ldturl" type="text" value="http://localhost/js_eulumdat/js-eulumdat/js-eulumdat/public_html/sample.ldt">
+      <button>Submit</button>
+    </div>
+    <div>
+      <div id="first">
+      </div>
+      <div id="second">
+      </div>
+    </div>
+    <script>
+      class Eulumdat {
+        
+        constructor () {
+          this.rawData = "";
+          this.arrData = "";
+          this.lineNames = this.nameLines();
+        }
+
+        htmlFirstLines() {
+          let ret = "";
+          ret += "<table>\n";
+          ret += "  <tr>\n";
+          ret += "    <th>number</th>\n";
+          ret += "    <th>description</th>\n";
+          ret += "    <th>value</th>\n";
+          ret += "  </tr>\n";
+          for (let i=1; i<this.lineNames.length; i++) {
+            let printI = i;
+            switch (i) {
+              case 27:
+                  printI = "26a";
+                break;
+              case 28:
+                  printI = "26b";
+                break;
+              case 29:
+                  printI = "26c";
+                break;
+              case 30:
+                  printI = "26d";
+                break;
+              case 31:
+                  printI = "26e";
+                break;
+              case 32:
+                  printI = "26f";
+                break;
+              case 33:
+              case 34:
+              case 35:
+              case 36:
+                printI = i-6;
+            }
+            ret += "  <tr>\n";
+            ret += "    <td>"+printI+"</td>\n";
+            ret += "    <td>"+this.lineNames[i]+"</td>\n";
+            ret += "    <td>"+this.arrData[i]+"</td>\n";
+            ret += "  </tr>\n";
+          }
+          ret += "</table>\n";
+          return ret;
+        }
+        
+        htmlSecondLines() {
+          let symmetry = parseInt(this.arrData[3]);
+          let cplanesNumbers = parseInt(this.arrData[4]);
+          let cplanesDistances = parseInt(this.arrData[5]);
+          let cplanesIntensities = parseInt(this.arrData[6]);
+          let mod = 43 + cplanesNumbers + cplanesIntensities;
+          let ret= "";
+          
+          ret += "<table>\n";
+          ret += "  <tr>\n";
+          ret += "    <th></th>\n";
+          ret += "    <th>c0°</th>\n";
+          ret += "    <th>c10°</th>\n";
+          ret += "    <th>c20°</th>\n";
+          ret += "    <th>c30°</th>\n";
+          ret += "    <th>c40°</th>\n";
+          ret += "    <th>c50°</th>\n";
+          ret += "    <th>c60°</th>\n";
+          ret += "    <th>c70°</th>\n";
+          ret += "    <th>c80°</th>\n";
+          ret += "    <th>c90°</th>\n";
+          ret += "  </tr>\n";
+          
+          for (let ci=0; ci<cplanesIntensities; ci++) {
+            ret += "  <tr>\n";
+            ret += "    <td>"+ci+"°</td>\n"
+            for (let dc=0; dc <=90; dc+=cplanesDistances) {
+              ret += "    <td>"+this.arrData[mod+(dc/cplanesDistances*cplanesIntensities)+ci]+"</td>\n";
+            }
+            ret += "  </tr>\n";
+          }
+          ret += "</table>\n";
+          return ret;
+        }
+
+    
+        nameLines() {
+          return [
+              null
+            , "Identifikation"
+            , "Lichtquellentyp"
+            , "Art der Symmetrie"
+            , "Anzahl Mc der C-Ebenen zwischen 0° und 360°"
+            , "Winkelintervall Dc zwischen den C-Ebenen"
+            , "Anzahl Ng der Lichtstärkewerte in jeder C-Ebene"
+            , "Winkelintervall Dg zwischen den Lichtstärkewerten einer C-Ebene"
+            , "Messprotokollnummer"
+            , "Leuchtenbezeichnung"
+            , "Leuchtennummer"
+            , "Dateiname / Datensatzname"
+            , "Datum / Benutzer"
+            , "Länge oder Durchmesser der Leuchte in mm"
+            , "Breite b der Leuchte in Millimeter"
+            , "Höhe der Leuchte in Millimeter"
+            , "Länge oder Durchmesser der leuchtenden Fläche in Millimeter"
+            , "Breite b1 der leuchtenden Fläche in Millimeter"
+            , "Höhe der leuchtenden Fläche in der C0-Ebene in Millimeter"
+            , "Höhe der leuchtenden Fläche in der C90-Ebene in Millimeter"
+            , "Höhe der leuchtenden Fläche in der C180-Ebene in Millimeter"
+            , "Höhe der leuchtenden Fläche in der C270-Ebene in Millimeter"
+            , "Anteil des unteren halbräumlichen Lichtstroms Phiu"
+            , "Leuchtenwirkungsgrad in %"
+            , "Umrechnungsfaktor für Lichtstärkewerte"
+            , "Neigung der Leuchte während der Messung"
+            , "Anzahl n der Standard-Lampensätze"
+            , "Anzahl der Lampen"
+            , "Typ der Lampen"
+            , "Gesamtlichtstrom der Lampen"
+            , "Lichtfarbe / Farbtemperatur"
+            , "Farbwiedergabeklasse / Farbwiedergabeindex"
+            , "Leistungsaufnahme gesamte Leuchte in W"
+            , "Direct ratios for room indices k = 0,6 … 5"
+            , "C-Winkel (beginnend bei 0°)"
+            , "G-Winkel (beginnend bei 0°)"
+            , "Lichtstärkeverteilung in Candela pro 1000 Lumen"
+          ];
+        }
+        eulumdat_convert(data) {
+          let edArray = data.split(/\r?\n/);  //converts eulumdat file to array
+          edArray.unshift(null);
+          this.arrData = edArray;
+          this.nameLines();
+        }
+      }
+      
+      myEuDat = new Eulumdat();
+      fetch('http://localhost/js_eulumdat/js-eulumdat/js-eulumdat/public_html/sample.ldt')
+        .then(response => response.text().then(text => {
+          //console.log(text);
+          myEuDat.eulumdat_convert(text);
+          document.getElementById('first').innerHTML = myEuDat.htmlFirstLines();
+//          myEuDat.firstLines();
+          document.getElementById('second').innerHTML = myEuDat.htmlSecondLines();
+//          myEuDat.secondLines();
+
+        }
+      ));
+      
+        
+    </script>
   </body>
 </html>

@@ -15,6 +15,8 @@
     <div>
       <div id="first">
       </div>
+      <div id="third">
+      </div>
       <div id="second">
       </div>
     </div>
@@ -93,22 +95,15 @@
           ret += "<table>\n";
           ret += "  <tr>\n";
           ret += "    <th></th>\n";
-          ret += "    <th>c0°</th>\n";
-          ret += "    <th>c10°</th>\n";
-          ret += "    <th>c20°</th>\n";
-          ret += "    <th>c30°</th>\n";
-          ret += "    <th>c40°</th>\n";
-          ret += "    <th>c50°</th>\n";
-          ret += "    <th>c60°</th>\n";
-          ret += "    <th>c70°</th>\n";
-          ret += "    <th>c80°</th>\n";
-          ret += "    <th>c90°</th>\n";
+          for(let i=0; i<=350; i=i+10) {
+            ret += "    <th>c"+i+"°</th>\n";
+          }
           ret += "  </tr>\n";
           
           for (let ci=0; ci<this.cplanesIntensities; ci++) {
             ret += "  <tr>\n";
             ret += "    <td>"+ci+"°</td>\n";
-            for (let dc=0; dc <=90; dc+=this.cplanesDistances) {
+            for (let dc=0; dc <=350; dc+=this.cplanesDistances) {
               ret += "    <td>"+this.arrData[this.mod+(dc/this.cplanesDistances*this.cplanesIntensities)+ci]+"</td>\n";
             }
             ret += "  </tr>\n";
@@ -274,6 +269,7 @@
               let text = e.target.result;
               myEuDat.eulumdatConvert(text);
               document.getElementById('first').innerHTML = myEuDat.htmlFirstLines();
+              document.getElementById('third').innerHTML = myEuDat.htmlSecondLines();
               document.getElementById('second').innerHTML = myEuDat.htmlDistanceTable();
 //        
               console.log(text);
